@@ -12,32 +12,11 @@ namespace Protocols.Yaxun2
     /// <summary>
     /// 通用协议
     /// </summary>
-    public class Protocol : IProtocol
+    public class Protocol
     {
-        public const int BlockLength = 250;
-
-        /// <summary>
-        /// 链路维护时间间隔，单位 秒
-        /// </summary>
-        private const int LinkTime = 1 * 60;
-
-        /// <summary>
-        /// 版本号 0x03
-        /// </summary>
-        private const byte Version = 0x03; //版本号
-        /// <summary>
-        /// 头 0x7e 
-        /// </summary>
-        private const byte Head = 0x7e;  //头 
-        /// <summary>
-        /// 尾 0x7e
-        /// </summary>
-        private const byte End = 0x7e; //尾
-
-        /// <summary>
-        /// 定时器，以便终端的链路维护
-        /// </summary>
-        private System.Timers.Timer timer = null;
+        
+        
+      
 
         #region 事件属性
 
@@ -120,17 +99,7 @@ namespace Protocols.Yaxun2
         }
 
        
-        /// <summary>
-        /// 组织指令 0x83 
-        /// </summary>
-        /// <param name="op">业务类型</param>
-        /// <param name="od">数据类型</param>
-        /// <param name="udata">用户数据</param>
-        /// <returns></returns>
-        private byte[] BuildCommand(byte op, byte od, byte[] udata)
-        {
-            return new byte[0];
-        }
+        
 
         /// <summary>
         /// 调度信息
@@ -198,21 +167,7 @@ namespace Protocols.Yaxun2
             mes.BodyBytes = body;
             return mes.ToBytes();
         }
-        /// <summary>
-        /// 断油断电: 0x7E 版本号（1） 校验(1) 优先级(1) 类型(1) { 区域号2 版本号2 业务类型1 数据类型1 目的手机号15 源手机号15 用户数据n 校验码1 }  0x7E
-        /// </summary>
-        /// <param name="state"> false 断油断电, true 恢复油路</param>
-        /// <returns></returns>
-        public override byte[] CutOil(bool state)
-        {
-            byte[] data = new byte[2];
-
-            data[0] = Convert.ToByte("00111111", 2);//0 S1 1 1 1 1 1 1 1：表示保留，0：表示按照低字节中的定义对开关进行相应的控制
-            //0 K1 0 0 0 0 0 1 K1：断油、断电， 0—接通， 1—切断  //0 K1 0 0 0 0 0 1 K1：断油、断电， 0—接通， 1—切断  
-            data[1] = state ? Convert.ToByte("00000001", 2) : Convert.ToByte("01000001", 2);
-
-            return BuildCommand(0x06, 0x01, data);
-        }
+       
         /// <summary>
         /// 单次定位
         /// </summary>
@@ -294,26 +249,7 @@ namespace Protocols.Yaxun2
 
         private byte[] SetCallTel(string tel)
         {
-            if (string.IsNullOrEmpty(tel))
-            {
-                return BuildCommand(0x33, 0x02, new byte[] { 0x00 }); //清除 
-            }
-            else
-            {
-                string[] ts = tel.Replace(';', ',').Split(new char[] { ',' }, StringSplitOptions.RemoveEmptyEntries);
-                byte[] data = new byte[1];
-                data[0] = ts.Length <= 5 ? (byte)ts.Length : (byte)0x05;
-                for (int i = 0; i < data[0]; i++)
-                {
-                    byte[] temp = Encoding.ASCII.GetBytes(ts[i]);
-                    int len = temp.Length <= 15 ? temp.Length : 15;
-                    Array.Resize(ref data, data.Length + 15);
-                    Array.Copy(temp, 0, data, 1 + 15 * i, len);
-                    for (int n = 1 + 15 * i + len; n < data.Length; n++)
-                        data[n] = 0x20;
-                }
-                return BuildCommand(0x33, 0x02, data);
-            }
+            
         }
 
         /// <summary>
@@ -345,14 +281,7 @@ namespace Protocols.Yaxun2
         /// </summary>
         private byte[] SetHelp(byte[] tel)
         {
-            if (tel.Length > 15) return null;
-
-            byte[] data = new byte[15];
-            Array.Copy(tel, data, tel.Length);
-            for (int i = tel.Length; i < 15; i++)
-                data[i] = 0x20;
-
-            return BuildCommand(0x10, 0x0b, data); //
+            
         }
         private byte[] SetSmsCenter(byte[] tel)
         {
@@ -364,13 +293,7 @@ namespace Protocols.Yaxun2
         /// </summary>
         public override byte[] SoundListen(string tel)
         {
-            byte[] data = Encoding.ASCII.GetBytes(tel);
-            int len = data.Length;
-            Array.Resize(ref data, 15);
-            for (int i = len; i < 15; i++)
-                data[i] = 0x20;
-
-            return BuildCommand(0x7, 0x20, data);
+            
         }
 
         /// <summary>
@@ -379,7 +302,7 @@ namespace Protocols.Yaxun2
         /// <returns></returns>
         public override byte[] SetDefault()
         {
-            return SetFrequency(30, 60, 0);
+           
         }
 
         /// <summary>
@@ -387,18 +310,7 @@ namespace Protocols.Yaxun2
         /// </summary>
         public override byte[] SetCall(CallType call)
         {
-            string outtype = "01", intype = "01";
-            switch (call)
-            {
-                case CallType.Outgoing_Calls: outtype = "01"; intype = "00"; break;
-                case CallType.Inconing_Calls: outtype = "00"; intype = "01"; break;
-                case CallType.No_All_Calls: outtype = "01"; intype = "01"; break;
-                case CallType.Unrestricted: outtype = "00"; intype = "00"; break;
-            }
-            //终端电话接听策略，0：自动接听；1：ACC ON 时自动接听，OFF 时手动接听
-            byte data = Convert.ToByte("0111" + outtype + intype, 2);
-
-            return BuildCommand(0x10, 0x08, new byte[] { data, 0x7f }); //组织指令   电话个数
+            
         }
 
         /// <summary>
@@ -469,12 +381,7 @@ namespace Protocols.Yaxun2
         /// <returns></returns>
         public override byte[] SetBlackbox(int second)
         {
-            byte[] data = new byte[2];
-
-            data[0] = Convert.ToByte(second / 256);
-            data[1] = Convert.ToByte(second % 256);
-
-            return BuildCommand(0x10, 0x12, data);
+            
         }
 
         /// <summary>
@@ -607,27 +514,7 @@ namespace Protocols.Yaxun2
         /// <returns></returns>
         public override byte[] SetDownload(APNType apn, IpType iptype, byte[] ip, int prot, string version)
         {
-            byte[] data = new byte[88];
-            for (int i = 0; i < data.Length; i++)
-                data[i] = 0x20;
-
-            data[0] = 0x21; // 属性（1）
-            data[1] = iptype == IpType.Tcp ? (byte)0x00 : (byte)0x01;  //模式（1）
-
-            byte[] bapn = Encoding.ASCII.GetBytes(apn.ToString()); //APN
-            Array.Copy(bapn, 0, data, 2, bapn.Length);
-
-            byte[] bip = Encoding.ASCII.GetBytes(string.Format("{0}.{1}.{2}.{3}", ip[0], ip[1], ip[2], ip[3]));
-            Array.Copy(bip, 0, data, 22, bip.Length);
-
-            byte[] bprot = Encoding.ASCII.GetBytes(prot.ToString());
-            Array.Copy(bprot, 0, data, 42, bprot.Length);
-
-            byte[] ver = Encoding.ASCII.GetBytes(version);
-            data[47] = (byte)ver.Length;
-            Array.Copy(ver, 0, data, 48, ver.Length);
-
-            return BuildCommand(0x10, 0x3a, data);
+            
         }
 
         /// <summary>
@@ -637,7 +524,7 @@ namespace Protocols.Yaxun2
         public override byte[] SetVersion()
         {
             
-            return BuildCommand(0x10, 0x22, new byte[0]);
+            
         }
 
         #endregion
@@ -698,7 +585,7 @@ namespace Protocols.Yaxun2
         }
 
         /// <summary>
-        /// 0x7E 版本号（1） 校验(1) 优先级(1) 类型(1) 数据(n) 0x7E
+        /// 终端数据解析
         /// </summary>
         /// <param name="command"></param>
         /// <returns></returns>
@@ -986,28 +873,12 @@ namespace Protocols.Yaxun2
         }
 
         /// <summary>
-        /// 用户识别码（6）参数个数（1）参数1类型（1）参数 1长度（1）参数 1数据（n）
+        /// 
         /// </summary>
         /// <param name="command"></param>
         /// <returns></returns>
         private void LoginReturn()
         {
-
-            
-            //byte[] ret = new byte[7];
-            //ret[0] = Head;//头 
-            //ret[1] = Version;//版本号
-            //ret[2] = 0x00;//校验(1)
-            //ret[3] = 0x10;//优先级(1)
-            //ret[4] = 0x81;//命令类型
-            //ret[5] = 0x01; //登录成功 数据
-            //ret[6] = End;
-            //this.BuildResponsion(ret);
-
-            //byte[] data = this.SetFrequency(30, 60, 0);
-            //if (this.Responsion != null)
-            //    this.Responsion(this, new ResponsionEventArgs(data)); 
-
             this.timer = new System.Timers.Timer();
             this.timer.Interval = LinkTime * 1000; //下发链路维护时间间隔
             this.timer.Elapsed += new System.Timers.ElapsedEventHandler(Timer_Elapsed);
